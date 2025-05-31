@@ -1,8 +1,7 @@
-// JavaScript for loading and displaying the leaderboard data
 document.addEventListener('DOMContentLoaded', function() {
     // Function to load the leaderboard data from CSV
     function loadLeaderboardData() {
-        fetch('data/leaderboard.csv')
+        fetch('leaderboard.csv')  // Changed from 'data/leaderboard.csv' to 'leaderboard.csv'
             .then(response => response.text())
             .then(data => {
                 // Parse CSV data
