@@ -576,6 +576,7 @@ footer {
     height: 80px;
     width: auto;
     border-radius: var(--border-radius-md);
+    /* Removed filter that was making the logo white */
 }
 
 .footer-info p {
@@ -599,7 +600,7 @@ footer {
 .footer-social img {
     width: 32px;
     height: 32px;
-    filter: brightness(0) invert(1);
+    /* Removed filter: brightness(0) invert(1); that was making icons white */
     transition: transform var(--transition-fast);
 }
 
@@ -961,3 +962,4 @@ footer {
         font-size: 0.9rem;
     }
 }
+
