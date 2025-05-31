@@ -640,3 +640,44 @@ h2:after {
 .animated {
     animation: fadeIn 0.8s ease-out;
 }
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 768px) {
+    .impact-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .stat {
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .impact-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    section {
+        padding: 2rem 0;
+    }
+    
+    h2 {
+        font-size: 1.8rem;
+    }
+}
