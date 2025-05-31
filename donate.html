@@ -545,51 +545,6 @@
                 paymentMethods[0].click(); // Select the default payment method (JazzCash)
             });
             
-            // Dynamic color theme based on time of day
-            const hour = new Date().getHours();
-            const root = document.documentElement;
-
-            if (hour >= 18 || hour < 6) {
-                // Evening/night theme
-                root.style.setProperty('--primary', '#0D5965');
-                root.style.setProperty('--accent', '#FFB52E'); // Brighter orange
-            } else if (hour >= 6 && hour < 12) {
-                // Morning theme
-                root.style.setProperty('--primary', '#1A6E7C');
-                root.style.setProperty('--accent', '#FFCA5F'); // Brighter light orange
-            } else {
-                // Afternoon theme
-                root.style.setProperty('--primary', '#2A8D9C');
-                root.style.setProperty('--accent', '#FFB52E'); // Brighter orange
-            }
-
-            // Parallax effect for hero section
-            window.addEventListener('scroll', function() {
-                const scrollPosition = window.pageYOffset;
-                const heroImage = document.querySelector('.hero-image');
-                if (heroImage) {
-                    heroImage.style.transform = `translateY(${scrollPosition * 0.4}px)`;
-                }
-            });
-
-            // Animate stats when they come into view
-            const stats = document.querySelectorAll('.stat-number');
-            const animateStats = () => {
-                stats.forEach(stat => {
-                    const rect = stat.getBoundingClientRect();
-                    const isInView = rect.top <= window.innerHeight && rect.bottom >= 0;
-                    
-                    if (isInView) {
-                        stat.classList.add('animated');
-                    }
-                });
-            };
-
-            window.addEventListener('scroll', animateStats);
-            
-            // Initial call to animate stats that are already in view
-            animateStats();
-        });
     </script>
 </body>
 </html>
