@@ -577,77 +577,94 @@
                 const scriptURL = 'https://formspree.io/f/xanjnelw';
                 
                 fetch(scriptURL, {
-    method: 'POST',
-    body: formData,
-    headers: {
-        'Accept': 'application/json' // Important for Formspree to return JSON
-    }
-})
-.then(response => {
-    if (response.ok) {
-        // If Formspree returns a successful response (usually with a JSON body like {ok: true})
-        return response.json();
-    } else {
-        // If there's an error, try to parse the JSON error message from Formspree
-        return response.json().then(data => {
-            if (data && data.errors) {
-                // Formspree provides detailed errors in an array
-                throw new Error(data.errors.map(err => err.message).join(', '));
-            }
-            // Fallback error message
-            throw new Error('Submission failed. Server responded with ' + response.status);
-        });
-    }
-})
-.then(data => { // This 'data' is the parsed JSON from a successful Formspree response
-    console.log('Formspree success:', data);
-    alert('Thank you for your donation! Your information has been recorded.');
-    
-    donationForm.reset(); // Reset the native form fields
-    
-    // Manually reset UI elements to their default states
-    // This is more robust than relying on .click() which might have side effects or fail if elements are not found.
+                method: 'POST',
+                body: formData, // FormData will be correctly sent as multipart/form-data
+                headers: {
+                    'Accept': 'application/json' // Request JSON response from Formspree
+                }
+            })
+            .then(response => {
+                // First, get the response as text, because Formspree might send non-JSON errors
+                return response.text().then(text => {
+                    if (response.ok) {
+                        try {
+                            return JSON.parse(text); // Try to parse if response.ok
+                        } catch (e) {
+                            // If JSON parsing fails but status is OK, treat as success (Formspree might sometimes send non-JSON success)
+                            console.warn('Formspree success response was not valid JSON, but status was OK:', text);
+                            return { ok: true, rawResponse: text }; // Simulate a successful structure
+                        }
+                    } else {
+                        // If response is not OK, try to parse error from Formspree JSON, otherwise use text
+                        console.error('Formspree error response text:', text); // Log the raw error text
+                        let errorMessage = `Submission failed. Server responded with ${response.status}.`;
+                        try {
+                            const errorData = JSON.parse(text);
+                            if (errorData && errorData.errors && Array.isArray(errorData.errors)) {
+                                errorMessage = 'Submission failed: ' + errorData.errors.map(err => {
+                                    return err.field ? `${err.field.replace(/_/g, ' ')}: ${err.message}` : err.message;
+                                }).join('; ');
+                            } else if (errorData && errorData.error) {
+                                 errorMessage = `Submission failed: ${errorData.error}`;
+                            } else {
+                                errorMessage += ` Response: ${text.substring(0, 200)}`; // Include part of the text if not JSON
+                            }
+                        } catch (e) {
+                            // If parsing errorData fails, stick with the status and raw text
+                            errorMessage += ` Raw response: ${text.substring(0, 200)}`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                });
+            })
+            .then(data => {
+                // data here is the parsed JSON from a successful Formspree response or the simulated success
+                if (data && (data.ok || data.id || data.success || data.rawResponse)) { // Check for various Formspree success indicators
+                    console.log('Formspree success:', data);
+                    alert('Thank you for your donation! Your information has been recorded.');
+                
+                    donationForm.reset(); // Reset the native form fields
+                
+                    // Manually reset UI elements to their default states
+                    if (amountOptions && amountOptions.length > 1) {
+                        amountOptions.forEach(opt => opt.classList.remove('active'));
+                        amountOptions[1].classList.add('active');
+                        if (customAmountContainer) customAmountContainer.style.display = 'none';
+                        const customAmountInput = document.getElementById('custom-amount');
+                        if (customAmountInput) customAmountInput.value = '';
+                    }
+                
+                    if (paymentMethods && paymentMethods.length > 0) {
+                        paymentMethods.forEach(m => m.classList.remove('active'));
+                        paymentMethods[0].classList.add('active');
+                        const jazzcashRadio = document.getElementById('jazzcash');
+                        if (jazzcashRadio) jazzcashRadio.checked = true;
+                        if (jazzcashDetails) jazzcashDetails.style.display = 'block';
+                        if (easypaisaDetails) easypaisaDetails.style.display = 'none';
+                        if (bankDetails) bankDetails.style.display = 'none';
+                    }
+                
+                    if (donationTabs && donationTabs.length > 0) {
+                        donationTabs.forEach(t => t.classList.remove('active'));
+                        donationTabs[0].classList.add('active');
+                        if (donationTypeDisplay) donationTypeDisplay.textContent = 'One-time Donation';
+                    }
 
-    // Reset Amount Options
-    if (amountOptions && amountOptions.length > 1) {
-        amountOptions.forEach(opt => opt.classList.remove('active'));
-        amountOptions[1].classList.add('active'); // Assuming ₨ 2,500 (the second option) is default
-        if (customAmountContainer) customAmountContainer.style.display = 'none';
-        const customAmountInput = document.getElementById('custom-amount');
-        if (customAmountInput) customAmountInput.value = '';
-    }
-    
-    // Reset Payment Methods
-    if (paymentMethods && paymentMethods.length > 0) {
-        paymentMethods.forEach(m => m.classList.remove('active'));
-        paymentMethods[0].classList.add('active'); // Assuming JazzCash (first option) is default
-        const jazzcashRadio = document.getElementById('jazzcash');
-        if (jazzcashRadio) jazzcashRadio.checked = true;
-
-        // Reset payment details visibility
-        if (jazzcashDetails) jazzcashDetails.style.display = 'block';
-        if (easypaisaDetails) easypaisaDetails.style.display = 'none';
-        if (bankDetails) bankDetails.style.display = 'none';
-    }
-    
-    // Reset Donation Tabs
-    if (donationTabs && donationTabs.length > 0) {
-        donationTabs.forEach(t => t.classList.remove('active'));
-        donationTabs[0].classList.add('active'); // Assuming 'One-time Donation' (first tab) is default
-        if (donationTypeDisplay) donationTypeDisplay.textContent = 'One-time Donation';
-    }
-
-    // Reset Checkboxes
-    if (anonymousCheckbox) anonymousCheckbox.checked = false;
-    if (leaderboardCheckbox) {
-        leaderboardCheckbox.checked = true; // Assuming 'consent to display' is default checked
-        leaderboardCheckbox.disabled = false;
-    }
-})
-.catch(error => {
-    console.error('Formspree submission error!', error.message);
-    alert('There was an error processing your donation: ' + error.message + '\nPlease ensure all required fields are filled correctly and try again.');
-});
+                    if (anonymousCheckbox) anonymousCheckbox.checked = false;
+                    if (leaderboardCheckbox) {
+                        leaderboardCheckbox.checked = true;
+                        leaderboardCheckbox.disabled = false;
+                    }
+                } else {
+                    // If Formspree returns 200 OK but the JSON doesn't look like success
+                    console.error('Formspree response OK, but data indicates failure or unexpected format:', data);
+                    alert('Thank you for your donation! We received it, but there was an issue confirming with the server. Please check your email.');
+                }
+            })
+            .catch(error => {
+                console.error('Formspree submission error object:', error);
+                alert('Error: ' + error.message + '\nPlease ensure all required fields are filled correctly, your internet is connected, and try again. If the problem persists, please contact support.');
+            });
             
             // Dynamic color theme based on time of day
             const hour = new Date().getHours();
