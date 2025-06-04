@@ -574,29 +574,80 @@
                 
                 // Send data to Google Sheets via Apps Script
                 // IMPORTANT: Replace 'YOUR_GOOGLE_SCRIPT_URL' with your actual Google Apps Script Web App URL
-                const scriptURL = 'https://script.google.com/macros/s/AKfycbwC12JaS_xZYO4h1ldlvGu5tkmXqaIZ0fMR21Lwab_FbJERLB2Z8-Y9j6hrR3R6EnZG/exec';
+                const scriptURL = 'https://formspree.io/f/xanjnelw';
                 
                 fetch(scriptURL, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    console.log('Success!', response);
-                    alert('Thank you for your donation! Your information has been recorded.');
-                    
-                    // Reset form
-                    donationForm.reset();
-                    
-                    // Reset UI state
-                    amountOptions[1].click(); // Select the default amount (₨ 2,500)
-                    paymentMethods[0].click(); // Select the default payment method (JazzCash)
-                    donationTabs[0].click(); // Select one-time donation
-                })
-                .catch(error => {
-                    console.error('Error!', error.message);
-                    alert('There was an error processing your donation. Please try again.');
-                });
-            });
+    method: 'POST',
+    body: formData,
+    headers: {
+        'Accept': 'application/json' // Important for Formspree to return JSON
+    }
+})
+.then(response => {
+    if (response.ok) {
+        // If Formspree returns a successful response (usually with a JSON body like {ok: true})
+        return response.json();
+    } else {
+        // If there's an error, try to parse the JSON error message from Formspree
+        return response.json().then(data => {
+            if (data && data.errors) {
+                // Formspree provides detailed errors in an array
+                throw new Error(data.errors.map(err => err.message).join(', '));
+            }
+            // Fallback error message
+            throw new Error('Submission failed. Server responded with ' + response.status);
+        });
+    }
+})
+.then(data => { // This 'data' is the parsed JSON from a successful Formspree response
+    console.log('Formspree success:', data);
+    alert('Thank you for your donation! Your information has been recorded.');
+    
+    donationForm.reset(); // Reset the native form fields
+    
+    // Manually reset UI elements to their default states
+    // This is more robust than relying on .click() which might have side effects or fail if elements are not found.
+
+    // Reset Amount Options
+    if (amountOptions && amountOptions.length > 1) {
+        amountOptions.forEach(opt => opt.classList.remove('active'));
+        amountOptions[1].classList.add('active'); // Assuming ₨ 2,500 (the second option) is default
+        if (customAmountContainer) customAmountContainer.style.display = 'none';
+        const customAmountInput = document.getElementById('custom-amount');
+        if (customAmountInput) customAmountInput.value = '';
+    }
+    
+    // Reset Payment Methods
+    if (paymentMethods && paymentMethods.length > 0) {
+        paymentMethods.forEach(m => m.classList.remove('active'));
+        paymentMethods[0].classList.add('active'); // Assuming JazzCash (first option) is default
+        const jazzcashRadio = document.getElementById('jazzcash');
+        if (jazzcashRadio) jazzcashRadio.checked = true;
+
+        // Reset payment details visibility
+        if (jazzcashDetails) jazzcashDetails.style.display = 'block';
+        if (easypaisaDetails) easypaisaDetails.style.display = 'none';
+        if (bankDetails) bankDetails.style.display = 'none';
+    }
+    
+    // Reset Donation Tabs
+    if (donationTabs && donationTabs.length > 0) {
+        donationTabs.forEach(t => t.classList.remove('active'));
+        donationTabs[0].classList.add('active'); // Assuming 'One-time Donation' (first tab) is default
+        if (donationTypeDisplay) donationTypeDisplay.textContent = 'One-time Donation';
+    }
+
+    // Reset Checkboxes
+    if (anonymousCheckbox) anonymousCheckbox.checked = false;
+    if (leaderboardCheckbox) {
+        leaderboardCheckbox.checked = true; // Assuming 'consent to display' is default checked
+        leaderboardCheckbox.disabled = false;
+    }
+})
+.catch(error => {
+    console.error('Formspree submission error!', error.message);
+    alert('There was an error processing your donation: ' + error.message + '\nPlease ensure all required fields are filled correctly and try again.');
+});
             
             // Dynamic color theme based on time of day
             const hour = new Date().getHours();
